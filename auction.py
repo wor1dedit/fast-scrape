@@ -30,4 +30,4 @@ class Auction:
 
     def scrape_item_info(self):
         for item in self.items:
-            item.get_info(self.auction_id, self.location)
+            item.scrape_info(self.auction_id, self.location)
