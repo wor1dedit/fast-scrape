@@ -1,16 +1,10 @@
-import re
-import os
-import sys
-import time
-
 from selenium import webdriver
-from selenium.webdriver.firefox.options import Options
-from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
-from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import TimeoutException
 from bs4 import BeautifulSoup
-import pandas as pd
 
 base_url = "https://www.bidfta.com"
 auction_id = 47327
@@ -29,14 +23,11 @@ more_items = True
 
 while more_items:
     try:
-        # Find next button
-        but = driver.find_element_by_xpath("//span[@class='next']")
-        but.click()
-    except NoSuchElementException:
+        # Find next button and click it when possible
+        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//span[@class='next']"))).click()
+    except (NoSuchElementException, TimeoutException):
         more_items = False
         break
-
-    time.sleep(2)
 
     soup = BeautifulSoup(driver.page_source, 'html.parser')
 
