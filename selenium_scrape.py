@@ -11,10 +11,9 @@ auction_id = 47327
 url = "https://www.bidfta.com/auctionItems?listView=true&idauctions={auction_id}&pageId={page_id}"
 
 driver = webdriver.Firefox()
-driver.implicitly_wait(3)
+driver.implicitly_wait(5)
 
 driver.get(url.format(auction_id=auction_id, page_id=1))
-page_source_1 = driver.page_source
 soup = BeautifulSoup(driver.page_source, 'html.parser')
 
 items = soup.find_all("div", attrs={"class": "col-md-12 product-list listView"})
@@ -42,5 +41,11 @@ for item in items:
     partial_url = partial_url[:partial_url.find("&firstIdItem")]
     print(partial_url)
 
-driver.quit()
+    driver.get(f"{base_url}{partial_url}")
+    soup = BeautifulSoup(driver.page_source, "html.parser")
 
+    description = soup.find_all("div", attrs={"class": "p-description m-t-10"})
+    box = soup.find_all("div", attrs={"class": "col-xs-12 p-l-20 p-r-20 right-box"})
+    print("")
+
+driver.quit()
