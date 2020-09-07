@@ -12,14 +12,6 @@ from bs4 import BeautifulSoup
 
 from item import Item
 
-
-def get_info(item, title: str):
-    try:
-        return item.find("strong", attrs={"title": title}).next_sibling.strip()
-    except AttributeError:
-        return None
-
-
 logging.basicConfig(filename="selenium_scrape.log", filemode="w", format='%(name)s - %(levelname)s - %(message)s', level=logging.DEBUG)
 logging.warning('This is a Warning')
 
@@ -57,29 +49,15 @@ while more_items:
 
     items.extend(found_items)
 
+auction_info = []
+
 for item in items:
     # Print out partial url of the item
     partial_url = item.contents[1].contents[1].contents[1].contents[1].attrs["href"]
     partial_url = partial_url[:partial_url.find("&firstIdItem")]
-    print(partial_url)
 
-    it = Item(partial_url)
-    it.scrape_info_selenium(driver)
+    auction_info.append(Item(partial_url).scrape_info_selenium(driver))
 
-    print(str(it))
-
-
-    # driver.get(f"{base_url}{partial_url}")
-    # WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//a[@class='bidHistoryIcon']")))
-    # soup = BeautifulSoup(driver.page_source, "html.parser")
-    #
-    # description = soup.find("div", attrs={"class": "p-description m-t-10"})
-    # titles = description.find_all("strong")
-    # an = get_info(description, "Auction Number")
-    # brand = get_info(description, "Brand name of item")
-    # title = get_info(description, "Title of item")
-    # msrp = get_info(description, "Maximum selling retail price of item")
-    #
-    # ...
+print(auction_info)
 
 driver.quit()
