@@ -20,13 +20,28 @@ class Item:
         "weight": "Item width dimension value",
         "info": "Additional information of item condition",
         "location": "Pickup Location",
+        "description": "Item description in details"
     }
 
     def __init__(self, url):
         self.url = f"https://www.bidfta.com{url}"
-        self.info = {"brand": None, "description": None, "msrp": None, "model": None, "load": None, "lotter": None,
-                     "width": None, "depth": None, "height": None, "weight": None, "info": None, "location": None,
-                     "asin": None, "amazon msrp": None, "amazon cost": None}
+        self.info = {
+            "brand": None,
+            "description": None,
+            "msrp": None,
+            "model": None,
+            "load": None,
+            "lotter": None,
+            "width": None,
+            "depth": None,
+            "height": None,
+            "weight": None,
+            "info": None,
+            "location": None,
+            "asin": None,
+            "amazon msrp": None,
+            "amazon cost": None,
+        }
 
     def scrape_info_selenium(self, driver=None):
         """
@@ -46,7 +61,22 @@ class Item:
             try:
                 self.info[k] = description.find("strong", attrs={"title": v}).next_sibling.strip()
             except AttributeError:
-                continue
+                try:
+                    # Handle case when title is blank and data-original-title is used
+                    self.info[k] = description.find("strong", attrs={"data-original-title": v}).next_sibling.strip()
+                except AttributeError:
+                    continue
+
+        # Check to see if read more button is present
+        if description.find("a", attrs={"class": "more"}):
+            WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//a[@class='more']"))).click()
+            soup = BeautifulSoup(driver.page_source, "html.parser")
+            description = soup.find("div", attrs={"class": "p-description m-t-10"})
+            self.info["description"] = (
+                description.find("strong", attrs={"data-original-title": "Item description in details"})
+                .next_sibling.next_sibling.text.strip("  Read Less")
+                .replace("... Read More", "", 1)
+            )
 
     def scrape_amazon_info(self):
         if self.info["model"]:
@@ -59,10 +89,15 @@ class Item:
             return None
 
         # Convert spaces to pluses
-        query_product_name = product_name.replace(' ', '+')
+        query_product_name = product_name.replace(" ", "+")
 
         # Query the title on Amazon.com
-        asin_query_url = "http://www.amazon.com/s/?url=search-alias%3Daps&field-keywords=" + query_product_name + "&rh=i%3Aaps%2Ck%3A" + query_product_name
+        asin_query_url = (
+            "http://www.amazon.com/s/?url=search-alias%3Daps&field-keywords="
+            + query_product_name
+            + "&rh=i%3Aaps%2Ck%3A"
+            + query_product_name
+        )
 
         url_query = requests.get(asin_query_url)
         if url_query.status_code != 200:
@@ -84,7 +119,7 @@ class Item:
 
             # Get ASIN
             try:
-                asin_string = query_result.attrs['data-asin']
+                asin_string = query_result.attrs["data-asin"]
             except:
                 print("Can't find ASIN")
                 return None
@@ -128,3 +163,11 @@ class Item:
                     self.info["amazon price"] = (dollar_amount + 1, 0)
 
         return True
+
+    def __str__(self):
+        return str(self.info)
+
+if __name__ == "__main__":
+    it = Item("/itemDetails?listView=true&pageId=4&idauctions=47327&idItems=3954584")
+    it.scrape_info_selenium()
+    print(it)
