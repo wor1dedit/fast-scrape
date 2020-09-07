@@ -1,59 +1,52 @@
 import requests
 from bs4 import BeautifulSoup
+from selenium import webdriver
+import re
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 
 
 class Item:
-    def __init__(self, id):
-        self.id = id
+    title_names = {
+        "brand": "Brand name of item",
+        "title": "Title of item",
+        "msrp": "Maximum selling retail price of item",
+        "model": "Item model number",
+        "specs": "Item specification in detail",
+        "width": "Item width dimension value",
+        "depth": "Item depth dimension value",
+        "length": "Item length dimension value",
+        "weight": "Item width dimension value",
+        "info": "Additional information of item condition",
+        "location": "Pickup Location",
+    }
+
+    def __init__(self, url):
+        self.url = f"https://www.bidfta.com{url}"
         self.info = {"brand": None, "description": None, "msrp": None, "model": None, "load": None, "lotter": None,
                      "width": None, "depth": None, "height": None, "weight": None, "info": None, "location": None,
                      "asin": None, "amazon msrp": None, "amazon cost": None}
 
-    def scrape_info(self, auction_id, location):
-        page_item = requests.get("https://bid.bidfta.com/cgi-bin/mnlist.cgi?{}{}/{}".format(location, auction_id, self.id))
-        soup_item = BeautifulSoup(page_item.content, 'html.parser')
+    def scrape_info_selenium(self, driver=None):
+        """
+        Scrape info from webpage
 
-        item = soup_item.find('tr', class_="DataRow")
+        :param driver: selenium web driver
+        :return:
+        """
+        if driver is None:
+            driver = webdriver.Firefox()
+        driver.get(self.url)
+        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//a[@class='bidHistoryIcon']")))
+        soup = BeautifulSoup(driver.page_source, "html.parser")
+        description = soup.find("div", attrs={"class": "p-description m-t-10"})
 
-        info = []
-
-        b = item.find_all('b')
-        for tb in b:
-            if tb.string == "Front Page":
-                break
-
-            if len(tb.next_sibling[2:]) > 0:
-                info.append((tb.string, tb.next_sibling.string[2:]))
-
-        self.parse_info(info)
-
-    def parse_info(self, info):
-        for fo in info:
-            title = fo[0].lower()
-            if title == 'item brand':
-                self.info['brand'] = fo[1]
-            elif title == 'item desc':
-                self.info['description'] = fo[1]
-            elif title == 'msrp':
-                self.info['msrp'] = fo[1]
-            elif title == 'model':
-                self.info['model'] = fo[1]
-            elif title == 'load #':
-                self.info['load'] = fo[1]
-            elif title == 'lotter':
-                self.info['lotter'] = fo[1]
-            elif title == 'width':
-                self.info['width'] = fo[1]
-            elif title == 'depth':
-                self.info['depth'] = fo[1]
-            elif title == 'height':
-                self.info['height'] = fo[1]
-            elif title == 'weight':
-                self.info['weight'] = fo[1]
-            elif title == 'additional info':
-                self.info['info'] = fo[1]
-            elif title == 'item location':
-                self.info['location'] = fo[1]
+        for k, v in self.title_names.items():
+            try:
+                self.info[k] = description.find("strong", attrs={"title": v}).next_sibling.strip()
+            except AttributeError:
+                continue
 
     def scrape_amazon_info(self):
         if self.info["model"]:
@@ -68,23 +61,15 @@ class Item:
         # Convert spaces to pluses
         query_product_name = product_name.replace(' ', '+')
 
-        # Query the movie title on Amazon.com
+        # Query the title on Amazon.com
         asin_query_url = "http://www.amazon.com/s/?url=search-alias%3Daps&field-keywords=" + query_product_name + "&rh=i%3Aaps%2Ck%3A" + query_product_name
 
-        if sys.version_info > (3, 0):
-            # Python 3
-            url_query = requests.get(asin_query_url)
-            if url_query.status_code != 200:
-                print("URL could not be opened")
-                return None
-            url_query_response = url_query.content
-        else:
-            # Python 2
-            try:
-                url_query_response = urllib2.urlopen(asin_query_url)
-            except urllib2.HTTPError:
-                print("URL could not be opened")
-                return None
+        url_query = requests.get(asin_query_url)
+        if url_query.status_code != 200:
+            print("URL could not be opened")
+            return None
+
+        url_query_response = url_query.content
 
         soup = BeautifulSoup(url_query_response, "html.parser")
 
@@ -92,7 +77,6 @@ class Item:
         query_result = soup.find(id="result_0")
 
         if query_result:
-            msrp = None
             dollar_amount = None
             cent_amount = None
 
@@ -101,9 +85,10 @@ class Item:
             # Get ASIN
             try:
                 asin_string = query_result.attrs['data-asin']
-            except Exception as e:
+            except:
                 print("Can't find ASIN")
                 return None
+
             if asin_string:
                 self.info["asin"] = asin_string
 
@@ -116,7 +101,7 @@ class Item:
                 else:
                     try:
                         self.info["amazon msrp"] = tuple(int(part) for part in split_msrp)
-                    except Exception as e:
+                    except ValueError:
                         print("Error converting list of strings to tuple of ints in parse msrp")
 
             # Get current dollar amount
@@ -124,7 +109,7 @@ class Item:
             if dollar_query:
                 try:
                     dollar_amount = int(dollar_query.getText())
-                except Exception as e:
+                except ValueError:
                     print("Can't convert current dollar amount to int")
 
             # Get current cent amount
