@@ -55,8 +55,9 @@ for item in items:
     # Print out partial url of the item
     partial_url = item.contents[1].contents[1].contents[1].contents[1].attrs["href"]
     partial_url = partial_url[:partial_url.find("&firstIdItem")]
-
-    auction_info.append(Item(partial_url).scrape_info_selenium(driver))
+    it = Item(partial_url)
+    it.scrape_info_selenium(driver)
+    auction_info.append(it)
 
 print(auction_info)
 
