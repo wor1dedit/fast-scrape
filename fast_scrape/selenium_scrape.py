@@ -10,9 +10,9 @@ from selenium.common.exceptions import ElementClickInterceptedException
 from selenium.common.exceptions import StaleElementReferenceException
 from bs4 import BeautifulSoup
 
-from item import Item
+from fast_scrape.item import Item
 
-logging.basicConfig(filename="selenium_scrape.log", filemode="w", format='%(name)s - %(levelname)s - %(message)s', level=logging.DEBUG)
+logging.basicConfig(filename="../selenium_scrape.log", filemode="w", format='%(name)s - %(levelname)s - %(message)s', level=logging.DEBUG)
 logging.warning('This is a Warning')
 
 base_url = "https://www.bidfta.com"
