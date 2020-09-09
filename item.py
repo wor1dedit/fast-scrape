@@ -5,6 +5,7 @@ import re
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
+import json
 
 
 class Item:
@@ -120,7 +121,7 @@ class Item:
             # Get ASIN
             try:
                 asin_string = query_result.attrs["data-asin"]
-            except:
+            except KeyError:
                 print("Can't find ASIN")
                 return None
 
@@ -152,7 +153,7 @@ class Item:
             if cent_query:
                 try:
                     cent_amount = int(cent_query.getText())
-                except Exception as e:
+                except ValueError:
                     print("Can't convert current cent amount to int")
 
             # Adds dollar and cents to info
@@ -165,7 +166,8 @@ class Item:
         return True
 
     def __str__(self):
-        return str(self.info)
+        return str(json.dumps(self.info, indent=4))
+
 
 if __name__ == "__main__":
     it = Item("/itemDetails?listView=true&pageId=4&idauctions=47327&idItems=3954584")
