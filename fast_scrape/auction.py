@@ -1,6 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
-from item import Item
+from fast_scrape.item import Item
 
 
 class Auction:
