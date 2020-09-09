@@ -49,7 +49,7 @@ while more_items:
 
     items.extend(found_items)
 
-auction_info = []
+auction_items = []
 
 for item in items:
     # Print out partial url of the item
@@ -57,8 +57,9 @@ for item in items:
     partial_url = partial_url[:partial_url.find("&firstIdItem")]
     it = Item(partial_url)
     it.scrape_info_selenium(driver)
-    auction_info.append(it)
+    auction_items.append(it)
 
-print(auction_info)
+for item in auction_items:
+    print(item)
 
 driver.quit()
