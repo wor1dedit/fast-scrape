@@ -44,9 +44,9 @@ class Item:
             "amazon cost": None,
         }
 
-    def scrape_info_selenium(self, driver=None):
+    def request_page_selenium(self, driver=None):
         """
-        Scrape info from webpage
+        Scrape grab info from webpage
 
         :param driver: selenium web driver
         :return:
@@ -56,8 +56,20 @@ class Item:
         driver.get(self.url)
         WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//a[@class='bidHistoryIcon']")))
         soup = BeautifulSoup(driver.page_source, "html.parser")
-        description = soup.find("div", attrs={"class": "p-description m-t-10"})
 
+        # Check to see if read more button is present
+        if soup.find("a", attrs={"class": "more"}):
+            WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//a[@class='more']"))).click()
+            soup = BeautifulSoup(driver.page_source, "html.parser")
+
+        self.parse_page(soup.find("div", attrs={"class": "p-description m-t-10"}))
+
+    def parse_page(self, description):
+        """
+        Parse info of description for useful info about item
+
+        :param description: Description part of auction item page
+        """
         for k, v in self.title_names.items():
             try:
                 self.info[k] = description.find("strong", attrs={"title": v}).next_sibling.strip()
@@ -68,11 +80,6 @@ class Item:
                 except AttributeError:
                     continue
 
-        # Check to see if read more button is present
-        if description.find("a", attrs={"class": "more"}):
-            WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//a[@class='more']"))).click()
-            soup = BeautifulSoup(driver.page_source, "html.parser")
-            description = soup.find("div", attrs={"class": "p-description m-t-10"})
             self.info["description"] = (
                 description.find("strong", attrs={"data-original-title": "Item description in details"})
                 .next_sibling.next_sibling.text.strip("  Read Less")
@@ -171,5 +178,6 @@ class Item:
 
 if __name__ == "__main__":
     it = Item("/itemDetails?listView=true&pageId=4&idauctions=47327&idItems=3954584")
-    it.scrape_info_selenium()
+    it.request_page_selenium()
+    it.scrape_amazon_info()
     print(it)

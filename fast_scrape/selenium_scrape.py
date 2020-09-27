@@ -43,7 +43,6 @@ while more_items:
         driver.execute_script("arguments[0].click();", element)
 
     soup = BeautifulSoup(driver.page_source, 'html.parser')
-
     # Find all items on the page
     found_items = soup.find_all("div", attrs={"class": "col-md-12 product-list listView "})
 
@@ -56,7 +55,7 @@ for item in items:
     partial_url = item.contents[1].contents[1].contents[1].contents[1].attrs["href"]
     partial_url = partial_url[:partial_url.find("&firstIdItem")]
     it = Item(partial_url)
-    it.scrape_info_selenium(driver)
+    it.request_page_selenium(driver)
     auction_items.append(it)
 
 for item in auction_items:
